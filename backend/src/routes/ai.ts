@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { getAdminSettings, patchGenerationStatus } from "../services/adminSettings.js";
 import { generateArticle } from "../services/openrouter.js";
+import { pickRandomCoverImage } from "../services/mediaStore.js";
 import { createPostFromMarkdown, saveGeneratedPost } from "../services/postStore.js";
 
 const router = Router();
@@ -22,7 +23,9 @@ router.post("/generate-article", async (req, res) => {
   try {
     const settings = await getAdminSettings();
     const markdown = await generateArticle(parsed.data.topic, settings.masterPrompt);
-    const post = await saveGeneratedPost(createPostFromMarkdown(markdown, parsed.data.topic));
+    const draft = createPostFromMarkdown(markdown, parsed.data.topic);
+    draft.coverImage = await pickRandomCoverImage() || draft.coverImage;
+    const post = await saveGeneratedPost(draft);
     await patchGenerationStatus(`Generated manually: ${post.title}`, new Date().toISOString());
     return res.status(201).json({ markdown, post });
   } catch (error) {

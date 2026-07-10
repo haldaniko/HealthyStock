@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
     "setup:dev-env": "node scripts/setup-dev-env.mjs",
     "dev:docker": "npm run setup:dev-env && docker compose up -d --build",
     "setup:prod-env": "node scripts/setup-prod-env.mjs"

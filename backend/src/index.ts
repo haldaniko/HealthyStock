@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "node:path";
 import postsRouter from "./routes/posts.js";
 import subscribersRouter from "./routes/subscribers.js";
 import aiRouter from "./routes/ai.js";
@@ -33,9 +34,10 @@ app.use(
     credentials: true
   })
 );
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(morgan("dev"));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use("/uploads", express.static(process.env.UPLOAD_DIR || path.resolve(process.cwd(), "uploads")));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "healthystock-backend" });

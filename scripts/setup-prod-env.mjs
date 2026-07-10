@@ -12,12 +12,16 @@ const backendExamplePath = path.join(rootDir, "backend/.env.production.example")
 
 const generated = {
   POSTGRES_PASSWORD: randomSecret(32),
+  LOCAL_SUPERADMIN_EMAIL: "admin@healthystock.com",
+  LOCAL_SUPERADMIN_PASSWORD: randomSecret(32),
   JWT_SECRET: randomSecret(64),
   REFRESH_TOKEN_SECRET: randomSecret(64)
 };
 
 const rootEnv = await upsertEnvFile(rootExamplePath, rootEnvPath, {
-  POSTGRES_PASSWORD: generated.POSTGRES_PASSWORD
+  POSTGRES_PASSWORD: generated.POSTGRES_PASSWORD,
+  LOCAL_SUPERADMIN_EMAIL: generated.LOCAL_SUPERADMIN_EMAIL,
+  LOCAL_SUPERADMIN_PASSWORD: generated.LOCAL_SUPERADMIN_PASSWORD
 });
 
 const postgresUser = rootEnv.POSTGRES_USER || "healthystock";
@@ -40,12 +44,14 @@ console.log(`- ${relative(backendEnvPath)}`);
 console.log("");
 console.log("Generated values only when missing or still set to placeholders:");
 console.log("- POSTGRES_PASSWORD");
+console.log("- LOCAL_SUPERADMIN_PASSWORD");
 console.log("- JWT_SECRET");
 console.log("- REFRESH_TOKEN_SECRET");
 console.log("- DATABASE_URL is synchronized from POSTGRES_* values");
 console.log("");
 console.log("Review and replace placeholders before deploying:");
 console.log("- VITE_API_URL");
+console.log("- VITE_GA_MEASUREMENT_ID if Google Analytics is needed");
 console.log("- CORS_ORIGIN");
 console.log("- OPENROUTER_API_KEY");
 console.log("- OPENROUTER_SITE_URL");
@@ -134,6 +140,7 @@ function shouldGenerate(value) {
     !value ||
     value.includes("replace-with") ||
     value.includes("your-strong") ||
+    value.includes("example") ||
     value === "changeme"
   );
 }

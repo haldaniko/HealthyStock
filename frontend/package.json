@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "sass": "^1.77.8"
+    "sass": "^1.77.8",
+    "vite": "^6.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.14.12",

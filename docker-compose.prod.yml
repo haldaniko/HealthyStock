@@ -3,74 +3,88 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-healthystock}
-      POSTGRES_USER: ${POSTGRES_USER:-healthystock}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before production deploy}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - healthystock_prod_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-healthystock} -d ${POSTGRES_DB:-healthystock}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
-      timeout: 3s
-      retries: 12
+      timeout: 5s
+      retries: 20
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
-      retries: 12
+      timeout: 5s
+      retries: 20
 
   backend:
     image: healthystock-backend-prod
-    restart: unless-stopped
     build:
       context: ./backend
       target: prod
+    restart: unless-stopped
+    ports:
+      - "4104:4000"
+    volumes:
+      - healthystock_prod_uploads:/app/uploads
     env_file:
       - path: ./backend/.env.production
-        format: raw
+        required: false
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-healthystock}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-healthystock}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
-    ports:
-      - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"fetch('http://localhost:4000/api/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))\""
-        ]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
       interval: 10s
-      timeout: 3s
-      retries: 12
-      start_period: 10s
+      timeout: 5s
+      retries: 20
 
   frontend:
     image: healthystock-frontend-prod
-    restart: unless-stopped
     build:
       context: ./frontend
       target: prod
       args:
-        VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL before production deploy}
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID}
+    restart: unless-stopped
     environment:
-      VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL before production deploy}
+      NODE_ENV: production
+      VITE_API_URL: ${VITE_API_URL}
+      VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID}
     ports:
-      - "8080:3000"
+      - "8099:3000"
     depends_on:
       backend:
         condition: service_healthy
 
+  admin-seed:
+    image: healthystock-backend-prod
+    env_file:
+      - path: ./backend/.env.production
+        required: false
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      LOCAL_SUPERADMIN_EMAIL: ${LOCAL_SUPERADMIN_EMAIL}
+      SUPERADMIN_PASSWORD: ${LOCAL_SUPERADMIN_PASSWORD}
+    command: ["sh", "-c", "npm run create-superadmin -- \"$LOCAL_SUPERADMIN_EMAIL\""]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
-  postgres_data:
-    name: healthystock_prod_postgres_data
+  healthystock_prod_postgres_data:
+  healthystock_prod_uploads:

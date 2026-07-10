@@ -2,6 +2,12 @@ import type { BlogPost, HealthIndex } from "./domain";
 
 export const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
+export function assetUrl(path?: string | null) {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text();
   const data = text ? JSON.parse(text) : {};

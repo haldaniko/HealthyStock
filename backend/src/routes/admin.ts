@@ -6,6 +6,7 @@ import { AdminRequest, requireAdmin } from "../middleware/adminAuth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { logAuditEvent } from "../services/auditLog.js";
 import { getAdminSettings, updateAdminSettings } from "../services/adminSettings.js";
+import { deleteCoverImage, listCoverImages, saveCoverImage } from "../services/mediaStore.js";
 import { createPost, deletePost, getAllPosts, updatePost } from "../services/postStore.js";
 import { BlogPost } from "../types.js";
 
@@ -19,7 +20,7 @@ const postSchema = z.object({
   slug: z.string().min(3).max(220).optional(),
   excerpt: z.string().min(20).max(500),
   content: z.string().min(20),
-  coverImage: z.string().url().optional().or(z.literal("")),
+  coverImage: z.string().refine((value) => value === "" || /^https?:\/\//i.test(value) || value.startsWith("/"), "Cover image must be a URL or site-relative path").optional(),
   author: z.string().min(2).max(120).default("Maria Iordanova"),
   publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   readTimeMinutes: z.coerce.number().int().min(1).max(90),
@@ -50,6 +51,31 @@ router.get("/posts", asyncHandler(async (_req, res) => {
 router.get("/settings", asyncHandler(async (_req, res) => {
   const settings = await getAdminSettings();
   return res.json(settings);
+}));
+
+router.get("/media/covers", asyncHandler(async (_req, res) => {
+  const items = await listCoverImages();
+  return res.json({ items });
+}));
+
+router.post("/media/covers", asyncHandler(async (req: AdminRequest, res) => {
+  const asset = await saveCoverImage(req.body);
+  await logAuditEvent({
+    actor: req.admin?.sub ?? "unknown",
+    action: "media.create",
+    target: asset.name
+  });
+  return res.status(201).json(asset);
+}));
+
+router.delete("/media/covers/:name", asyncHandler(async (req: AdminRequest, res) => {
+  await deleteCoverImage(req.params.name);
+  await logAuditEvent({
+    actor: req.admin?.sub ?? "unknown",
+    action: "media.delete",
+    target: req.params.name
+  });
+  return res.json({ ok: true });
 }));
 
 router.put("/settings", asyncHandler(async (req: AdminRequest, res) => {

@@ -703,6 +703,117 @@ button {
   }
 }
 
+.admin-media-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.admin-media-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+}
+
+.media-upload-button {
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.admin-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-media-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+
+  img {
+    width: 82px;
+    height: 58px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--surface);
+  }
+
+  div {
+    min-width: 0;
+  }
+
+  strong,
+  small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: var(--muted);
+  }
+
+  button {
+    border: 1px solid var(--brand);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--brand);
+  }
+
+  .danger-button {
+    border-color: #9f2d20;
+    background: #9f2d20;
+    color: #fff;
+  }
+}
+
 .admin-actions {
   display: flex;
   align-items: center;
@@ -800,8 +911,21 @@ button {
   }
 
   .admin-layout,
-  .admin-grid {
+  .admin-grid,
+  .admin-media-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-media-head {
+    display: grid;
+  }
+
+  .admin-media-card {
+    grid-template-columns: 76px minmax(0, 1fr) auto;
+
+    .danger-button {
+      grid-column: 1 / -1;
+    }
   }
 
   .admin-kpis {

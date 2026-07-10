@@ -1,6 +1,7 @@
 import { createPostFromMarkdown, saveGeneratedPost } from "./postStore.js";
 import { generateArticle } from "./openrouter.js";
 import { getAdminSettings, patchGenerationStatus } from "./adminSettings.js";
+import { pickRandomCoverImage } from "./mediaStore.js";
 
 let schedulerStarted = false;
 let generationInProgress = false;
@@ -37,7 +38,9 @@ export async function runScheduledGeneration() {
   generationInProgress = true;
   try {
     const markdown = await generateArticle(settings.generationTopic, settings.masterPrompt);
-    const post = await saveGeneratedPost(createPostFromMarkdown(markdown, settings.generationTopic));
+    const draft = createPostFromMarkdown(markdown, settings.generationTopic);
+    draft.coverImage = await pickRandomCoverImage() || draft.coverImage;
+    const post = await saveGeneratedPost(draft);
     await patchGenerationStatus(`Generated: ${post.title}`, new Date().toISOString());
   } finally {
     generationInProgress = false;

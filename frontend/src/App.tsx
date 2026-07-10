@@ -1,11 +1,19 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { apiUrl, getHealthIndex, getPostBySlug, getPosts, subscribe } from "./api";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { apiUrl, assetUrl, getHealthIndex, getPostBySlug, getPosts, subscribe } from "./api";
+import { trackPageView } from "./analytics";
 import type { AdminSettings, BlogPost, HealthIndex } from "./domain";
 
 type DraftPost = Omit<BlogPost, "secondaryKeywords"> & { secondaryKeywords: string };
 type AdminView = "articles" | "generation";
-type PendingAction = "auth" | "sync" | "save-post" | "delete-post" | "save-settings" | "generate" | null;
+type PendingAction = "auth" | "sync" | "save-post" | "delete-post" | "save-settings" | "generate" | "upload-media" | "delete-media" | null;
 type StatusTone = "success" | "error" | "info";
+
+type MediaAsset = {
+  name: string;
+  url: string;
+  size: number;
+  createdAt: string;
+};
 
 const emptyDraft: DraftPost = {
   id: "",
@@ -21,7 +29,7 @@ const emptyDraft: DraftPost = {
   secondaryKeywords: "",
   category: "Admin",
   rating: "B",
-  status: "draft"
+  status: "published"
 };
 
 const coverPool = [
@@ -96,10 +104,19 @@ function ShareBar({ title, url }: { title: string; url: string }) {
 
 
 function getStableCover(post: BlogPost) {
-  if (post.coverImage) return post.coverImage;
+  if (post.coverImage) return post.coverImage.startsWith("/uploads/") ? assetUrl(post.coverImage) : post.coverImage;
   let hash = 0;
   for (const char of post.slug) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   return coverPool[hash % coverPool.length];
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Could not read image."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function getCookie(name: string): string | null {
@@ -334,6 +351,7 @@ function AdminPanel() {
   const [accessToken, setAccessToken] = useState("");
   const [csrfToken, setCsrfToken] = useState("");
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [coverImages, setCoverImages] = useState<MediaAsset[]>([]);
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [draft, setDraft] = useState<DraftPost>(emptyDraft);
   const [selectedSlug, setSelectedSlug] = useState("");
@@ -353,7 +371,7 @@ function AdminPanel() {
 
   useEffect(() => {
     if (accessToken) {
-      Promise.all([loadPosts(accessToken), loadSettings(accessToken)]).catch((error) => {
+      Promise.all([loadPosts(accessToken), loadSettings(accessToken), loadMedia(accessToken)]).catch((error) => {
         setStatus({ tone: "error", text: error instanceof Error ? error.message : "Failed to load admin data" });
       });
     }
@@ -436,10 +454,15 @@ function AdminPanel() {
     setSettings(await request<AdminSettings>("/api/admin/settings", {}, token));
   }
 
+  async function loadMedia(token = accessToken) {
+    const data = await request<{ items: MediaAsset[] }>("/api/admin/media/covers", {}, token);
+    setCoverImages(data.items);
+  }
+
   async function refreshAdminData() {
     try {
       setPendingAction("sync");
-      await Promise.all([loadPosts(), loadSettings()]);
+      await Promise.all([loadPosts(), loadSettings(), loadMedia()]);
       setSuccess("Admin data refreshed");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Refresh failed");
@@ -586,6 +609,43 @@ function AdminPanel() {
     }
   }
 
+  async function uploadCoverImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setPendingAction("upload-media");
+    setStatus(null);
+    try {
+      const asset = await request<MediaAsset>("/api/admin/media/covers", {
+        method: "POST",
+        body: JSON.stringify({ fileName: file.name, dataUrl: await readFileAsDataUrl(file) })
+      });
+      setCoverImages((current) => [asset, ...current]);
+      setDraft((current) => ({ ...current, coverImage: asset.url }));
+      setSuccess("Cover image uploaded");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function deleteCoverImage(asset: MediaAsset) {
+    setPendingAction("delete-media");
+    setStatus(null);
+    try {
+      await request(`/api/admin/media/covers/${encodeURIComponent(asset.name)}`, { method: "DELETE" });
+      setCoverImages((current) => current.filter((item) => item.name !== asset.name));
+      if (draft.coverImage === asset.url) setDraft((current) => ({ ...current, coverImage: "" }));
+      setSuccess("Cover image deleted");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Delete failed");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   if (!accessToken) {
     return (
       <section className="admin-auth container">
@@ -661,6 +721,32 @@ function AdminPanel() {
             <label>Excerpt<textarea value={draft.excerpt} onChange={(event) => setDraft({ ...draft, excerpt: event.target.value })} required /></label>
             <label>Secondary keywords<input value={draft.secondaryKeywords} onChange={(event) => setDraft({ ...draft, secondaryKeywords: event.target.value })} placeholder="fiber, blood sugar, longevity" /></label>
             <label>Cover image URL<input value={draft.coverImage} onChange={(event) => setDraft({ ...draft, coverImage: event.target.value })} /></label>
+            <section className="admin-media-panel">
+              <div className="admin-media-head">
+                <div>
+                  <h2>Cover images</h2>
+                  <p>Upload reusable images for article covers and AI-generated posts.</p>
+                </div>
+                <label className="media-upload-button">
+                  {pendingAction === "upload-media" ? "Uploading..." : "Upload image"}
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={uploadCoverImage} disabled={isBusy} />
+                </label>
+              </div>
+              <div className="admin-media-grid">
+                {coverImages.map((asset) => (
+                  <article key={asset.name} className="admin-media-card">
+                    <img src={assetUrl(asset.url)} alt="" />
+                    <div>
+                      <strong>{asset.name}</strong>
+                      <small>{Math.round(asset.size / 1024)} KB</small>
+                    </div>
+                    <button type="button" className="btn-secondary" onClick={() => setDraft({ ...draft, coverImage: asset.url })}>Use</button>
+                    <button type="button" className="danger-button" onClick={() => deleteCoverImage(asset)} disabled={isBusy}>Delete</button>
+                  </article>
+                ))}
+                {coverImages.length === 0 ? <p className="empty-list">No uploaded cover images yet.</p> : null}
+              </div>
+            </section>
             <label>Article HTML<textarea className="content-editor" value={draft.content} onChange={(event) => setDraft({ ...draft, content: event.target.value })} required /></label>
             <footer className="admin-actions">
               <button type="submit" disabled={isBusy}>{pendingAction === "save-post" ? "Saving..." : isEditing ? "Save changes" : "Create article"}</button>
@@ -717,6 +803,10 @@ export default function App() {
     getPosts().then(setPosts).catch(() => setPosts([]));
     getHealthIndex().then(setHealthIndex).catch(() => setHealthIndex(null));
   }, []);
+
+  useEffect(() => {
+    trackPageView(route);
+  }, [route]);
 
   const slug = route.startsWith("/blog/") ? decodeURIComponent(route.replace("/blog/", "")) : "";
 
