@@ -423,8 +423,9 @@ button {
 
   .article-cover {
     width: 100%;
-    max-height: 380px;
-    object-fit: cover;
+    height: clamp(260px, 42vw, 520px);
+    object-fit: contain;
+    background: #fffaf1;
     border-radius: 16px;
     margin: 16px 0 22px;
   }
