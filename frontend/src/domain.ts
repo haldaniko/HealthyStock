@@ -32,6 +32,7 @@ export interface AdminSettings {
   autoGenerationEnabled: boolean;
   generationTopic: string;
   generationTime: string;
+  generationTimes: string[];
   generationFrequency: "manual" | "daily" | "weekly" | "monthly";
   lastGeneratedAt?: string;
   lastGenerationStatus?: string;

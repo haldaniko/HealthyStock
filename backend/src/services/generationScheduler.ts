@@ -49,11 +49,11 @@ export async function runScheduledGeneration() {
 
 function isDue(settings: Awaited<ReturnType<typeof getAdminSettings>>): boolean {
   const now = new Date();
-  const [hour, minute] = settings.generationTime.split(":").map(Number);
-  const scheduledAt = new Date(now);
-  scheduledAt.setHours(hour, minute, 0, 0);
+  const dueSlots = settings.generationTimes
+    .map((time) => scheduledDateForTime(now, time))
+    .filter((scheduledAt) => now >= scheduledAt);
 
-  if (now < scheduledAt) {
+  if (dueSlots.length === 0) {
     return false;
   }
 
@@ -67,18 +67,27 @@ function isDue(settings: Awaited<ReturnType<typeof getAdminSettings>>): boolean 
   }
 
   if (settings.generationFrequency === "daily") {
-    return lastRun.toDateString() !== now.toDateString();
+    return dueSlots.some((scheduledAt) => lastRun < scheduledAt);
   }
 
   if (settings.generationFrequency === "weekly") {
-    return periodKey(lastRun, "weekly") !== periodKey(now, "weekly");
+    return periodKey(lastRun, "weekly") !== periodKey(now, "weekly")
+      && dueSlots.some((scheduledAt) => lastRun < scheduledAt);
   }
 
   if (settings.generationFrequency === "monthly") {
-    return lastRun.getFullYear() !== now.getFullYear() || lastRun.getMonth() !== now.getMonth();
+    return (lastRun.getFullYear() !== now.getFullYear() || lastRun.getMonth() !== now.getMonth())
+      && dueSlots.some((scheduledAt) => lastRun < scheduledAt);
   }
 
   return false;
+}
+
+function scheduledDateForTime(now: Date, time: string) {
+  const [hour, minute] = time.split(":").map(Number);
+  const scheduledAt = new Date(now);
+  scheduledAt.setHours(hour, minute, 0, 0);
+  return scheduledAt;
 }
 
 function periodKey(date: Date, period: "weekly") {

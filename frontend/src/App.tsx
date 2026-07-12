@@ -404,6 +404,20 @@ function AdminPanel() {
       secondaryKeywords: currentDraft.secondaryKeywords.split(",").map((keyword) => keyword.trim()).filter(Boolean)
     };
   }
+  function getGenerationTimes(currentSettings: AdminSettings) {
+    return currentSettings.generationTimes?.length ? currentSettings.generationTimes : [currentSettings.generationTime || "09:00"];
+  }
+  function toSettingsPayload(currentSettings: AdminSettings) {
+    const generationTimes = getGenerationTimes(currentSettings)
+      .filter((time) => /^\d{2}:\d{2}$/.test(time))
+      .sort();
+    const safeTimes = generationTimes.length > 0 ? Array.from(new Set(generationTimes)) : ["09:00"];
+    return {
+      ...currentSettings,
+      generationTime: safeTimes[0],
+      generationTimes: safeTimes
+    };
+  }
 
   async function request<T>(path: string, init: RequestInit = {}, token = accessToken): Promise<T> {
     const csrfHeaderToken = path === "/api/auth/refresh" || path === "/api/auth/logout"
@@ -574,7 +588,7 @@ function AdminPanel() {
     try {
       setSettings(await request<AdminSettings>("/api/admin/settings", {
         method: "PUT",
-        body: JSON.stringify(settings)
+        body: JSON.stringify(toSettingsPayload(settings))
       }));
       setSuccess("Generation settings saved");
     } catch (error) {
@@ -591,7 +605,7 @@ function AdminPanel() {
     try {
       const savedSettings = await request<AdminSettings>("/api/admin/settings", {
         method: "PUT",
-        body: JSON.stringify(settings)
+        body: JSON.stringify(toSettingsPayload(settings))
       });
       setSettings(savedSettings);
       const generated = await request<{ post: BlogPost }>("/api/ai/generate-article", {
@@ -607,6 +621,36 @@ function AdminPanel() {
     } finally {
       setPendingAction(null);
     }
+  }
+
+  function updateGenerationTime(index: number, value: string) {
+    if (!settings) return;
+    const generationTimes = getGenerationTimes(settings).map((time, timeIndex) => timeIndex === index ? value : time);
+    setSettings({
+      ...settings,
+      generationTime: generationTimes[0] ?? settings.generationTime,
+      generationTimes
+    });
+  }
+
+  function addGenerationTime() {
+    if (!settings) return;
+    const generationTimes = [...getGenerationTimes(settings), "12:00"];
+    setSettings({
+      ...settings,
+      generationTimes
+    });
+  }
+
+  function removeGenerationTime(index: number) {
+    if (!settings) return;
+    const generationTimes = getGenerationTimes(settings).filter((_, timeIndex) => timeIndex !== index);
+    const nextTimes = generationTimes.length > 0 ? generationTimes : [settings.generationTime || "09:00"];
+    setSettings({
+      ...settings,
+      generationTime: nextTimes[0],
+      generationTimes: nextTimes
+    });
   }
 
   async function uploadCoverImage(event: ChangeEvent<HTMLInputElement>) {
@@ -764,9 +808,25 @@ function AdminPanel() {
           <div className="admin-grid">
             <label>Auto generation<select value={settings.autoGenerationEnabled ? "enabled" : "disabled"} onChange={(event) => setSettings({ ...settings, autoGenerationEnabled: event.target.value === "enabled" })}><option value="disabled">Disabled</option><option value="enabled">Enabled</option></select></label>
             <label>Frequency<select value={settings.generationFrequency} onChange={(event) => setSettings({ ...settings, generationFrequency: event.target.value as AdminSettings["generationFrequency"] })}><option value="manual">Manual only</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label>
-            <label>Generation time<input type="time" value={settings.generationTime} onChange={(event) => setSettings({ ...settings, generationTime: event.target.value })} /></label>
             <label>Topic seed<input value={settings.generationTopic} onChange={(event) => setSettings({ ...settings, generationTopic: event.target.value })} /></label>
           </div>
+          <section className="generation-times" aria-label="Generation times">
+            <div className="section-title-row">
+              <div>
+                <h3>Generation times</h3>
+                <p>Scheduled runs use these times in the server timezone.</p>
+              </div>
+              <button type="button" className="btn-secondary" onClick={addGenerationTime} disabled={getGenerationTimes(settings).length >= 12}>Add time</button>
+            </div>
+            <div className="generation-time-list">
+              {getGenerationTimes(settings).map((time, index) => (
+                <div className="generation-time-row" key={`${time}-${index}`}>
+                  <input type="time" value={time} onChange={(event) => updateGenerationTime(index, event.target.value)} />
+                  <button type="button" className="btn-secondary" onClick={() => removeGenerationTime(index)} disabled={getGenerationTimes(settings).length <= 1}>Remove</button>
+                </div>
+              ))}
+            </div>
+          </section>
           <label>Master prompt<textarea className="prompt-editor" value={settings.masterPrompt} onChange={(event) => setSettings({ ...settings, masterPrompt: event.target.value })} /></label>
           <div className="settings-summary">
             <p>Last run: <strong>{settings.lastGeneratedAt ? new Date(settings.lastGeneratedAt).toLocaleString() : "Never"}</strong></p>

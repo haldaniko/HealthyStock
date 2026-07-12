@@ -84,11 +84,23 @@ export async function initDb() {
       auto_generation_enabled BOOLEAN NOT NULL,
       generation_topic TEXT NOT NULL,
       generation_time TEXT NOT NULL,
+      generation_times TEXT[] NOT NULL DEFAULT ARRAY['09:00']::TEXT[],
       generation_frequency TEXT NOT NULL CHECK (generation_frequency IN ('manual', 'daily', 'weekly', 'monthly')),
       last_generated_at TIMESTAMPTZ,
       last_generation_status TEXT,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `);
+
+  await pool.query(`
+    ALTER TABLE admin_settings
+    ADD COLUMN IF NOT EXISTS generation_times TEXT[] NOT NULL DEFAULT ARRAY['09:00']::TEXT[]
+  `);
+
+  await pool.query(`
+    UPDATE admin_settings
+    SET generation_times = ARRAY[generation_time]
+    WHERE generation_times IS NULL OR cardinality(generation_times) = 0
   `);
 
   await pool.query(`

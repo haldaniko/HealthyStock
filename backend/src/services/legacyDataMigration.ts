@@ -109,10 +109,10 @@ async function migrateAdminSettings() {
   await query(
     `INSERT INTO admin_settings (
       id, master_prompt, auto_generation_enabled, generation_topic,
-      generation_time, generation_frequency, last_generated_at,
+      generation_time, generation_times, generation_frequency, last_generated_at,
       last_generation_status, updated_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
     ON CONFLICT (id) DO NOTHING`,
     [
       1,
@@ -120,6 +120,7 @@ async function migrateAdminSettings() {
       Boolean(settings.autoGenerationEnabled),
       settings.generationTopic ?? "",
       settings.generationTime ?? "09:00",
+      [settings.generationTime ?? "09:00"],
       settings.generationFrequency ?? "manual",
       settings.lastGeneratedAt ?? null,
       settings.lastGenerationStatus ?? null
