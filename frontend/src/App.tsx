@@ -420,7 +420,7 @@ function AdminPanel() {
       }
     });
 
-    if (response.status === 401 && path !== "/api/auth/refresh") {
+    if (response.status === 401 && path !== "/api/auth/refresh" && path !== "/api/auth/login") {
       try {
         const refreshedToken = await refreshAccessToken();
         return request<T>(path, init, refreshedToken);
