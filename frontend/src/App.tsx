@@ -40,6 +40,9 @@ const coverPool = [
   "/covers/cover4.svg"
 ];
 
+const hourOptions = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"));
+const minuteOptions = Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"));
+
 function navigate(path: string) {
   window.history.pushState({}, "", path);
   window.dispatchEvent(new Event("app:navigate"));
@@ -634,6 +637,13 @@ function AdminPanel() {
     });
   }
 
+  function updateGenerationTimePart(index: number, part: "hour" | "minute", value: string) {
+    if (!settings) return;
+    const currentTime = getGenerationTimes(settings)[index] || "09:00";
+    const [currentHour = "09", currentMinute = "00"] = currentTime.split(":");
+    updateGenerationTime(index, part === "hour" ? `${value}:${currentMinute}` : `${currentHour}:${value}`);
+  }
+
   function addGenerationTime() {
     if (!settings) return;
     const generationTimes = [...getGenerationTimes(settings), "12:00"];
@@ -822,7 +832,20 @@ function AdminPanel() {
             <div className="generation-time-list">
               {getGenerationTimes(settings).map((time, index) => (
                 <div className="generation-time-row" key={`${time}-${index}`}>
-                  <input type="time" value={time} onChange={(event) => updateGenerationTime(index, event.target.value)} />
+                  <div className="generation-time-selects">
+                    <label>
+                      <span>Hour</span>
+                      <select value={(time.split(":")[0] || "09").padStart(2, "0")} onChange={(event) => updateGenerationTimePart(index, "hour", event.target.value)}>
+                        {hourOptions.map((hour) => <option key={hour} value={hour}>{hour}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minute</span>
+                      <select value={(time.split(":")[1] || "00").padStart(2, "0")} onChange={(event) => updateGenerationTimePart(index, "minute", event.target.value)}>
+                        {minuteOptions.map((minute) => <option key={minute} value={minute}>{minute}</option>)}
+                      </select>
+                    </label>
+                  </div>
                   <button type="button" className="btn-secondary" onClick={() => removeGenerationTime(index)} disabled={getGenerationTimes(settings).length <= 1}>Remove</button>
                 </div>
               ))}

@@ -936,6 +936,23 @@ button {
   }
 }
 
+.generation-time-selects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(88px, 1fr));
+  gap: 8px;
+
+  label {
+    gap: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  select {
+    padding: 9px 10px;
+  }
+}
+
 .settings-summary {
   border: 1px solid var(--line);
   border-radius: 8px;
