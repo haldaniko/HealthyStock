@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="Micronutrient scorecard">
+  <rect width="1200" height="720" fill="#eef3ef"/>
+  <rect x="80" y="80" width="1040" height="560" rx="28" fill="#fbf7ed" stroke="#d5d0c2" stroke-width="4"/>
+  <g fill="none" stroke-linecap="round" stroke-width="14">
+    <path d="M197 505V284" stroke="#16452f"/>
+    <path d="M351 505V222" stroke="#d18a00"/>
+    <path d="M505 505V330" stroke="#2f6f89"/>
+    <path d="M659 505V182" stroke="#8c4739"/>
+    <path d="M813 505V256" stroke="#6b9544"/>
+    <path d="M967 505V304" stroke="#111820"/>
+  </g>
+  <path d="M167 505h830" stroke="#d8d0c2" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="197" cy="284" r="28" fill="#16452f"/>
+  <circle cx="351" cy="222" r="28" fill="#d18a00"/>
+  <circle cx="505" cy="330" r="28" fill="#2f6f89"/>
+  <circle cx="659" cy="182" r="28" fill="#8c4739"/>
+  <circle cx="813" cy="256" r="28" fill="#6b9544"/>
+  <circle cx="967" cy="304" r="28" fill="#111820"/>
+  <text x="156" y="164" fill="#111820" font-family="Arial, sans-serif" font-size="50" font-weight="800">Micronutrient scorecard</text>
+  <text x="156" y="218" fill="#657078" font-family="Arial, sans-serif" font-size="28">compare benefits, tradeoffs, and hidden costs</text>
+</svg>

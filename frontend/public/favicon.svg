@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="HealthyStock">
+  <rect width="64" height="64" rx="14" fill="#103f2a"/>
+  <path d="M14 41c7-18 17-25 34-25-2 17-10 27-25 30 3-8 9-15 18-21-12 4-20 11-27 16Z" fill="#f4a51c"/>
+  <path d="M17 46h30" stroke="#f9f5ea" stroke-width="5" stroke-linecap="round"/>
+  <path d="M18 34h7l5-10 6 16 5-9h7" fill="none" stroke="#f9f5ea" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

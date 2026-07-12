@@ -655,6 +655,18 @@ button {
   color: #11662f;
 }
 
+.media-source-chip {
+  align-self: center;
+  border-radius: 999px;
+  background: #e4f7e6;
+  color: #11662f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 7px 9px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="Fresh produce market analysis">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f8f3e7"/>
+      <stop offset="1" stop-color="#dff0d3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <rect x="72" y="72" width="1056" height="576" rx="28" fill="#fffaf1" stroke="#d6cdbd" stroke-width="4"/>
+  <path d="M154 504c145-170 296-236 460-197 149 36 269-15 433-166" fill="none" stroke="#16452f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M181 521h838" stroke="#e6dccb" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="293" cy="405" r="62" fill="#f4a51c"/>
+  <circle cx="484" cy="310" r="72" fill="#b94430"/>
+  <circle cx="686" cy="332" r="68" fill="#6f9d45"/>
+  <circle cx="874" cy="250" r="74" fill="#e4c35f"/>
+  <path d="M253 375c33-52 81-75 146-68-10 68-48 105-113 112 14-31 35-55 66-72-45 13-74 34-99 28Z" fill="#16452f" opacity=".88"/>
+  <text x="154" y="160" fill="#111820" font-family="Arial, sans-serif" font-size="54" font-weight="800">HealthyStock</text>
+  <text x="154" y="214" fill="#5f6b72" font-family="Arial, sans-serif" font-size="28">food signals and practical nutrition ratings</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="Long term health portfolio">
+  <rect width="1200" height="720" fill="#f5efe2"/>
+  <rect x="72" y="72" width="1056" height="576" rx="28" fill="#ffffff" stroke="#d8d0c2" stroke-width="4"/>
+  <path d="M194 468c146-28 217-99 278-185 74 130 168 187 325 139 67-20 133-67 209-140" fill="none" stroke="#13422a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M214 512h772" stroke="#e6dece" stroke-width="6" stroke-linecap="round"/>
+  <path d="M276 245c65-86 147-127 246-123-11 105-77 170-198 196 27-52 68-94 123-127-73 20-130 50-171 54Z" fill="#6f9d45"/>
+  <path d="M710 300c42-68 99-101 172-98-7 78-56 127-146 147 20-38 51-70 92-94-54 15-95 36-118 45Z" fill="#f4a51c"/>
+  <text x="154" y="165" fill="#111820" font-family="Arial, sans-serif" font-size="52" font-weight="800">Long-term health portfolio</text>
+  <text x="154" y="590" fill="#657078" font-family="Arial, sans-serif" font-size="29">food choices framed as assets for the body</text>
+</svg>

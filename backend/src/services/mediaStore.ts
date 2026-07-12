@@ -18,7 +18,15 @@ export interface MediaAsset {
   url: string;
   size: number;
   createdAt: string;
+  builtIn?: boolean;
 }
+
+const builtInCoverImages: MediaAsset[] = [
+  { name: "cover1.svg", url: "/covers/cover1.svg", size: 0, createdAt: "2026-01-01T00:00:00.000Z", builtIn: true },
+  { name: "cover2.svg", url: "/covers/cover2.svg", size: 0, createdAt: "2026-01-01T00:00:00.000Z", builtIn: true },
+  { name: "cover3.svg", url: "/covers/cover3.svg", size: 0, createdAt: "2026-01-01T00:00:00.000Z", builtIn: true },
+  { name: "cover4.svg", url: "/covers/cover4.svg", size: 0, createdAt: "2026-01-01T00:00:00.000Z", builtIn: true }
+];
 
 async function ensureCoverDir() {
   await fs.mkdir(coverDir, { recursive: true });
@@ -72,7 +80,7 @@ export async function listCoverImages(): Promise<MediaAsset[]> {
       })
   );
 
-  return assets.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return [...assets.sort((a, b) => b.createdAt.localeCompare(a.createdAt)), ...builtInCoverImages];
 }
 
 export async function saveCoverImage(input: { fileName?: string; dataUrl?: string }): Promise<MediaAsset> {

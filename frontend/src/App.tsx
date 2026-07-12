@@ -13,6 +13,7 @@ type MediaAsset = {
   url: string;
   size: number;
   createdAt: string;
+  builtIn?: boolean;
 };
 
 const emptyDraft: DraftPost = {
@@ -33,10 +34,10 @@ const emptyDraft: DraftPost = {
 };
 
 const coverPool = [
-  "/covers/cover1.png",
-  "/covers/cover2.png",
-  "/covers/cover3.png",
-  "/covers/cover4.png"
+  "/covers/cover1.svg",
+  "/covers/cover2.svg",
+  "/covers/cover3.svg",
+  "/covers/cover4.svg"
 ];
 
 function navigate(path: string) {
@@ -782,10 +783,10 @@ function AdminPanel() {
                     <img src={assetUrl(asset.url)} alt="" />
                     <div>
                       <strong>{asset.name}</strong>
-                      <small>{Math.round(asset.size / 1024)} KB</small>
+                      <small>{asset.builtIn ? "Included" : `${Math.round(asset.size / 1024)} KB`}</small>
                     </div>
                     <button type="button" className="btn-secondary" onClick={() => setDraft({ ...draft, coverImage: asset.url })}>Use</button>
-                    <button type="button" className="danger-button" onClick={() => deleteCoverImage(asset)} disabled={isBusy}>Delete</button>
+                    {asset.builtIn ? <span className="media-source-chip">Built-in</span> : <button type="button" className="danger-button" onClick={() => deleteCoverImage(asset)} disabled={isBusy}>Delete</button>}
                   </article>
                 ))}
                 {coverImages.length === 0 ? <p className="empty-list">No uploaded cover images yet.</p> : null}
