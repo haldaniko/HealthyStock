@@ -1,12 +1,13 @@
 import type { BlogPost, HealthIndex } from "./domain";
 
-export const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+export const apiUrl = window.__HEALTHYSTOCK_CONFIG__?.apiUrl || import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export function assetUrl(path?: string | null) {
   if (!path) return "";
   if (/^https?:\/\//i.test(path)) return path;
   if (path.startsWith("/covers/") || path.startsWith("/favicon")) return path;
-  return `${apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const servedPath = path.startsWith("/uploads/") ? `/api${path}` : path;
+  return `${apiUrl}${servedPath.startsWith("/") ? servedPath : `/${servedPath}`}`;
 }
 
 async function readJson<T>(response: Response): Promise<T> {

@@ -37,7 +37,9 @@ app.use(
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
-app.use("/uploads", express.static(process.env.UPLOAD_DIR || path.resolve(process.cwd(), "uploads")));
+const uploadDir = process.env.UPLOAD_DIR || path.resolve(process.cwd(), "uploads");
+app.use("/uploads", express.static(uploadDir));
+app.use("/api/uploads", express.static(uploadDir));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "healthystock-backend" });

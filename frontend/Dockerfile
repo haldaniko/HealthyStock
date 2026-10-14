@@ -23,7 +23,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN npm install -g serve@14
 COPY --from=build /app/dist ./dist
+COPY runtime-config.mjs ./runtime-config.mjs
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup && chown -R appuser:appgroup /app
 USER appuser
 EXPOSE 3000
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["node", "runtime-config.mjs"]

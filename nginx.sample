@@ -2,11 +2,11 @@
 # Adjust server_name and TLS/certbot settings for your domain.
 
 upstream healthystock_backend {
-    server 127.0.0.1:4000;
+    server 127.0.0.1:4104;
 }
 
 upstream healthystock_frontend {
-    server 127.0.0.1:8080;
+    server 127.0.0.1:8099;
 }
 
 server {
@@ -32,6 +32,12 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /uploads/ {
+        proxy_pass http://healthystock_backend;
+        proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 

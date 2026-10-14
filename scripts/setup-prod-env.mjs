@@ -24,16 +24,11 @@ const rootEnv = await upsertEnvFile(rootExamplePath, rootEnvPath, {
   LOCAL_SUPERADMIN_PASSWORD: generated.LOCAL_SUPERADMIN_PASSWORD
 });
 
-const postgresUser = rootEnv.POSTGRES_USER || "healthystock";
-const postgresDb = rootEnv.POSTGRES_DB || "healthystock";
-const postgresPassword = rootEnv.POSTGRES_PASSWORD || generated.POSTGRES_PASSWORD;
-const dockerDatabaseUrl = `postgres://${postgresUser}:${postgresPassword}@postgres:5432/${postgresDb}`;
-
 await upsertEnvFile(backendExamplePath, backendEnvPath, {
   JWT_SECRET: generated.JWT_SECRET,
   REFRESH_TOKEN_SECRET: generated.REFRESH_TOKEN_SECRET
 }, {
-  DATABASE_URL: dockerDatabaseUrl
+  DATABASE_URL: "sqlite:/host/db.sqlite3"
 });
 
 console.log("Production env setup complete.");
@@ -47,7 +42,7 @@ console.log("- POSTGRES_PASSWORD");
 console.log("- LOCAL_SUPERADMIN_PASSWORD");
 console.log("- JWT_SECRET");
 console.log("- REFRESH_TOKEN_SECRET");
-console.log("- DATABASE_URL is synchronized from POSTGRES_* values");
+console.log("- DATABASE_URL points to the host-bound production SQLite file");
 console.log("");
 console.log("Review and replace placeholders before deploying:");
 console.log("- VITE_API_URL");

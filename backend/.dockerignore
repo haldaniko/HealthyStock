@@ -1,11 +1,10 @@
 node_modules
 dist
-data/*.json
-data/*.jsonl
-!data/generated-posts.json
-npm-debug.log*
 .env
 .env.*
 !.env.example
 !.env.production.example
-.DS_Store
+data
+uploads
+*.sqlite3
+*.sqlite3-*

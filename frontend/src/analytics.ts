@@ -1,4 +1,4 @@
-const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "G-BLV5ZDVWXZ";
+const measurementId = window.__HEALTHYSTOCK_CONFIG__?.measurementId || import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "G-BLV5ZDVWXZ";
 let scriptLoaded = false;
 let pendingPageView: string | null = null;
 let lastTrackedPath = "";

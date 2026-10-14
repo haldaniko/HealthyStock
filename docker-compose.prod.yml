@@ -2,14 +2,11 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    env_file: ./.env.production
     volumes:
       - healthystock_prod_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -23,6 +20,28 @@ services:
       timeout: 5s
       retries: 20
 
+  migrate:
+    image: healthystock-backend-prod
+    build:
+      context: ./backend
+      target: prod
+    env_file: ./.env.production
+    environment:
+      POSTGRES_HOST: postgres
+      HOST_DATA_DIR: /host
+      OLD_UPLOAD_DIR: /old-uploads
+    volumes:
+      - type: bind
+        source: .
+        target: /host
+      - healthystock_prod_uploads:/old-uploads:ro
+    command: ["node", "scripts/migrate-production.mjs"]
+    user: "0:0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   backend:
     image: healthystock-backend-prod
     build:
@@ -32,21 +51,26 @@ services:
     ports:
       - "4104:4000"
     volumes:
-      - healthystock_prod_uploads:/app/uploads
+      - type: bind
+        source: .
+        target: /host
     env_file:
       - path: ./backend/.env.production
         required: false
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: sqlite:/host/db.sqlite3
+      UPLOAD_DIR: /host/media
       REDIS_URL: redis://redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      admin-seed:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -56,14 +80,8 @@ services:
     build:
       context: ./frontend
       target: prod
-      args:
-        VITE_API_URL: ${VITE_API_URL}
-        VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID}
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      VITE_API_URL: ${VITE_API_URL}
-      VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID}
+    env_file: ./.env.production
     ports:
       - "8099:3000"
     depends_on:
@@ -73,16 +91,18 @@ services:
   admin-seed:
     image: healthystock-backend-prod
     env_file:
-      - path: ./backend/.env.production
-        required: false
+      - path: ./.env.production
+        required: true
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      LOCAL_SUPERADMIN_EMAIL: ${LOCAL_SUPERADMIN_EMAIL}
-      SUPERADMIN_PASSWORD: ${LOCAL_SUPERADMIN_PASSWORD}
-    command: ["sh", "-c", "npm run create-superadmin -- \"$LOCAL_SUPERADMIN_EMAIL\""]
+      DATABASE_URL: sqlite:/host/db.sqlite3
+    volumes:
+      - type: bind
+        source: .
+        target: /host
+    command: ["node", "scripts/seed-superadmin.mjs"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: "no"
 
 volumes:

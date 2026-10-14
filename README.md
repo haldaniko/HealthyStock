@@ -6,7 +6,7 @@ Full-stack blog platform where AI writes as Maria Iordanova in the style of "Blo
 
 - Backend: Node.js, Express, TypeScript
 - Frontend: Vite, React, TypeScript, SCSS
-- Infra: Docker, Docker Compose, PostgreSQL
+- Infra: Docker Compose, PostgreSQL for local development, SQLite for production
 - AI writing: OpenRouter API
 - Newsletter: SMTP via Nodemailer
 
@@ -55,7 +55,7 @@ Full-stack blog platform where AI writes as Maria Iordanova in the style of "Blo
 
 ## Admin Setup
 
-Admin accounts are stored in PostgreSQL. The database stores only `password_hash`, never the plain password.
+Admin accounts are stored in the configured database. The database stores only `password_hash`, never the plain password.
 
 With Docker:
 
@@ -87,13 +87,13 @@ You can also clear stored refresh tokens locally:
 - Docker/PostgreSQL: `docker compose exec postgres psql -U healthystock -d healthystock -c "delete from refresh_tokens;"`
 - restart backend: `docker compose restart backend`
 
-This only logs admins out. It does not delete users from PostgreSQL.
+This only logs admins out. It does not delete users.
 
 ## Production Secrets
 
 Set stable, strong secrets in `backend/.env.production` or your hosting secret manager:
 
-- `DATABASE_URL`
+- `DATABASE_URL` (set by production Compose to `sqlite:/host/db.sqlite3`)
 - `JWT_SECRET`
 - `REFRESH_TOKEN_SECRET`
 
@@ -103,7 +103,7 @@ Generate them once, keep them stable, and do not commit them:
 
 Do not generate these secrets on every app startup. Changing them invalidates active admin sessions and refresh tokens.
 
-For production Docker deploys, also set:
+For the one-time production import, keep the existing values of:
 
 - `POSTGRES_DB`
 - `POSTGRES_USER`
@@ -111,29 +111,13 @@ For production Docker deploys, also set:
 
 ## Production Deployment (Docker)
 
-1. Generate production env files:
-   - `npm run setup:prod-env`
-   - the script keeps existing non-placeholder values and only generates missing placeholder secrets
-2. Review generated files:
-   - root `.env.production`
-   - `backend/.env.production`
-3. Replace placeholders:
-   - root `.env.production`: `VITE_API_URL`
-   - `backend/.env.production`: `CORS_ORIGIN`, `OPENROUTER_API_KEY`, `OPENROUTER_SITE_URL`, SMTP values if needed
-   - optional OpenRouter tuning is available through `OPENROUTER_TIMEOUT_MS`, `OPENROUTER_MAX_INPUT_CHARS`, `OPENROUTER_MAX_OUTPUT_TOKENS`, and `OPENROUTER_TEMPERATURE`
-   - root `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` are used by Docker Compose
-   - backend `DATABASE_URL` is generated from the same root `POSTGRES_*` values, so Docker and backend stay aligned
-   - generated `POSTGRES_PASSWORD`, `JWT_SECRET`, and `REFRESH_TOKEN_SECRET` should stay stable and should not be regenerated on every deploy
-4. Build and start:
-   - `docker compose --env-file .env.production -f docker-compose.prod.yml up --build -d`
-5. Create the first superadmin:
-   - safer shell-history friendly form:
-     - `SUPERADMIN_PASSWORD='your-strong-production-password' docker compose --env-file .env.production -f docker-compose.prod.yml exec -e SUPERADMIN_PASSWORD backend npm run create-superadmin -- admin@yourdomain.com`
-   - direct form:
-     - `docker compose --env-file .env.production -f docker-compose.prod.yml exec backend npm run create-superadmin -- admin@yourdomain.com 'your-strong-production-password'`
-6. Verify:
-   - `docker compose --env-file .env.production -f docker-compose.prod.yml ps`
-   - `curl http://localhost:4000/api/health`
+See [the production migration runbook](PRODUCTION-SQLITE-MIGRATION.md) for backup, rollout, verification, and recovery. With the existing `.env.production` and `backend/.env.production` retained, run from the same project directory:
+
+```sh
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+The first run copies PostgreSQL data into a verified temporary SQLite file, copies the old uploads volume into `./media`, and publishes `./db.sqlite3` only after the checks pass. Later runs verify and keep that SQLite file. The old PostgreSQL and uploads volumes remain attached. PostgreSQL is fenced read-only after a successful import.
 
 Production backend will refuse to start if required secrets are missing, if `JWT_SECRET` and `REFRESH_TOKEN_SECRET` are equal, if secrets are too short, or if production CORS/site URLs still point to `localhost`.
 
@@ -149,13 +133,13 @@ Production backend will refuse to start if required secrets are missing, if `JWT
 
 ## Production Ports
 
-- Frontend container is exposed on host port `8080`.
-- Backend container is exposed on host port `4000`.
-- PostgreSQL is not exposed publicly in `docker-compose.prod.yml`; it is available only inside the Docker network.
+- Frontend container is exposed on host port `8099`.
+- Backend container is exposed on host port `4104`.
+- PostgreSQL is not exposed publicly in `docker-compose.prod.yml`; it remains attached for the initial import and recovery.
 
 Put a reverse proxy such as Nginx, Caddy, Traefik, or your hosting platform in front of these containers for HTTPS and public domains.
 
-An Nginx starting point is available in `nginx.sample`. It proxies `/api/` to backend port `4000` and all frontend traffic to port `8080`.
+An Nginx starting point is available in `nginx.sample`. It proxies `/api/` and `/uploads/` to backend port `4104`, and frontend traffic to port `8099`.
 
 ## API Summary
 
@@ -178,8 +162,8 @@ An Nginx starting point is available in `nginx.sample`. It proxies `/api/` to ba
 ## Notes
 
 - Set `VITE_API_URL`, `CORS_ORIGIN`, and cookie domain settings when deploying to a real domain.
-- Generated/admin-edited posts, admin settings, refresh sessions, subscribers, audit events, admin users, and password hashes are stored in PostgreSQL.
-- Legacy JSON files under `backend/data` are only used for one-time migration into PostgreSQL when the corresponding database table is empty.
-- Runtime data files are ignored by git. Back up the PostgreSQL volume in production.
+- Generated/admin-edited posts, admin settings, refresh sessions, subscribers, audit events, admin users, and password hashes are stored in `./db.sqlite3` in production.
+- Legacy JSON files under `backend/data` are only used for one-time migration when the corresponding database table is empty.
+- Runtime data files are ignored by git. Back up `./db.sqlite3` and `./media` after the switch; retain the old PostgreSQL and uploads volumes.
 - Admin article HTML is sanitized before saving.
 - Production Docker images do not include local `backend/data` files, `.env`, `node_modules`, or TypeScript build cache.
