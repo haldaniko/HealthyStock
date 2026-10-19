@@ -15,7 +15,8 @@ const generated = {
   LOCAL_SUPERADMIN_EMAIL: "admin@healthystock.com",
   LOCAL_SUPERADMIN_PASSWORD: randomSecret(32),
   JWT_SECRET: randomSecret(64),
-  REFRESH_TOKEN_SECRET: randomSecret(64)
+  REFRESH_TOKEN_SECRET: randomSecret(64),
+  BOT_INTEGRATION_TOKEN: randomSecret(64)
 };
 
 const rootEnv = await upsertEnvFile(rootExamplePath, rootEnvPath, {
@@ -26,7 +27,8 @@ const rootEnv = await upsertEnvFile(rootExamplePath, rootEnvPath, {
 
 await upsertEnvFile(backendExamplePath, backendEnvPath, {
   JWT_SECRET: generated.JWT_SECRET,
-  REFRESH_TOKEN_SECRET: generated.REFRESH_TOKEN_SECRET
+  REFRESH_TOKEN_SECRET: generated.REFRESH_TOKEN_SECRET,
+  BOT_INTEGRATION_TOKEN: generated.BOT_INTEGRATION_TOKEN
 }, {
   DATABASE_URL: "sqlite:/host/db.sqlite3"
 });
@@ -42,6 +44,7 @@ console.log("- POSTGRES_PASSWORD");
 console.log("- LOCAL_SUPERADMIN_PASSWORD");
 console.log("- JWT_SECRET");
 console.log("- REFRESH_TOKEN_SECRET");
+console.log("- BOT_INTEGRATION_TOKEN");
 console.log("- DATABASE_URL points to the host-bound production SQLite file");
 console.log("");
 console.log("Review and replace placeholders before deploying:");

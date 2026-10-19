@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS generated_posts (
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS generated_posts_published_at_idx ON generated_posts(published_at DESC);
+CREATE TABLE IF NOT EXISTS bot_articles (
+  external_id TEXT PRIMARY KEY, post_id TEXT NOT NULL UNIQUE REFERENCES generated_posts(id) ON DELETE CASCADE,
+  payload_hash TEXT NOT NULL, image_hash TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  published_at TEXT
+);
 CREATE TABLE IF NOT EXISTS admin_settings (
   id INTEGER PRIMARY KEY CHECK (id = 1), master_prompt TEXT NOT NULL,
   auto_generation_enabled INTEGER NOT NULL CHECK (auto_generation_enabled IN (0, 1)),

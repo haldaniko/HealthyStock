@@ -10,16 +10,19 @@ import aiRouter from "./routes/ai.js";
 import healthIndexRouter from "./routes/healthIndex.js";
 import authRouter from "./routes/auth.js";
 import adminRouter from "./routes/admin.js";
+import botRouter from "./routes/bot.js";
 import { startGenerationScheduler } from "./services/generationScheduler.js";
 import { validateProductionAuthConfig } from "./services/auth.js";
 import { initDb } from "./services/db.js";
 import { migrateLegacyDataIfNeeded } from "./services/legacyDataMigration.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { validateBotIntegrationConfig } from "./services/botIntegration.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 
 validateProductionAuthConfig();
+validateBotIntegrationConfig();
 
 if (process.env.TRUST_PROXY === "true") {
   app.set("trust proxy", 1);
@@ -51,6 +54,7 @@ app.use("/api/ai", aiRouter);
 app.use("/api/health-index", healthIndexRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/bot/v1", botRouter);
 app.use(errorHandler);
 
 async function startServer() {

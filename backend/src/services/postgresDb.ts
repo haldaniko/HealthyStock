@@ -78,6 +78,17 @@ export async function initDb() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS bot_articles (
+      external_id UUID PRIMARY KEY,
+      post_id TEXT NOT NULL UNIQUE REFERENCES generated_posts(id) ON DELETE CASCADE,
+      payload_hash TEXT NOT NULL,
+      image_hash TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      published_at TIMESTAMPTZ
+    )
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_settings (
       id SMALLINT PRIMARY KEY CHECK (id = 1),
       master_prompt TEXT NOT NULL,

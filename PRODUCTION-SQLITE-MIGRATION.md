@@ -6,21 +6,23 @@
 
    ```sh
    set -eu
-   mkdir -p ../healthystock-backup
-   pg_container=$(docker compose -f docker-compose.prod.yml ps -q postgres)
-   backend_container=$(docker compose -f docker-compose.prod.yml ps -q backend)
+   test -f .env.production && test -f backend/.env.production
+   backup_dir="$HOME/HealthyStock-backup-$(date +%F-%H%M%S)"
+   mkdir -m 700 -p "$backup_dir"
+   pg_container=$(docker compose --env-file .env.production -f docker-compose.prod.yml ps -q postgres)
+   backend_container=$(docker compose --env-file .env.production -f docker-compose.prod.yml ps -q backend)
    pg_volume=$(docker inspect "$pg_container" --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}')
    uploads_volume=$(docker inspect "$backend_container" --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
    test -n "$pg_volume" && test -n "$uploads_volume"
-   docker compose -f docker-compose.prod.yml stop backend admin-seed
-   docker compose -f docker-compose.prod.yml exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > ../healthystock-backup/postgresql.dump
-   docker compose -f docker-compose.prod.yml stop postgres
-   docker run --rm -v "$pg_volume:/source:ro" -v "$(pwd)/../healthystock-backup:/backup" alpine:3.20 tar -C /source -czf /backup/postgres-volume.tar.gz .
-   docker run --rm -v "$uploads_volume:/source:ro" -v "$(pwd)/../healthystock-backup:/backup" alpine:3.20 tar -C /source -czf /backup/uploads-volume.tar.gz .
-   cp -a .env.production ../healthystock-backup/root.env.production
-   cp -a backend/.env.production ../healthystock-backup/backend.env.production
-   if [ -f db.sqlite3 ]; then cp -a db.sqlite3 ../healthystock-backup/; fi
-   if [ -d media ]; then cp -a media ../healthystock-backup/; fi
+   docker compose --env-file .env.production -f docker-compose.prod.yml stop backend admin-seed
+   docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$backup_dir/postgresql.dump"
+   docker compose --env-file .env.production -f docker-compose.prod.yml stop postgres
+   docker run --rm -v "$pg_volume:/source:ro" -v "$backup_dir:/backup" alpine:3.20 tar -C /source -czf /backup/postgres-volume.tar.gz .
+   docker run --rm -v "$uploads_volume:/source:ro" -v "$backup_dir:/backup" alpine:3.20 tar -C /source -czf /backup/uploads-volume.tar.gz .
+   cp -a .env.production "$backup_dir/root.env.production"
+   cp -a backend/.env.production "$backup_dir/backend.env.production"
+   if [ -f db.sqlite3 ]; then cp -a db.sqlite3 "$backup_dir/"; fi
+   if [ -d media ]; then cp -a media "$backup_dir/"; fi
    ```
 
    The commands inspect the current containers to find the exact old volume names. Do not use `docker compose down -v`. Stopping the old backend before the backup closes the write window. Keep backup files outside the Git checkout and protect the env files.

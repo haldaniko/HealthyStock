@@ -167,3 +167,30 @@ An Nginx starting point is available in `nginx.sample`. It proxies `/api/` and `
 - Runtime data files are ignored by git. Back up `./db.sqlite3` and `./media` after the switch; retain the old PostgreSQL and uploads volumes.
 - Admin article HTML is sanitized before saving.
 - Production Docker images do not include local `backend/data` files, `.env`, `node_modules`, or TypeScript build cache.
+
+## Telegram posting bot
+
+HealthyStock exposes the editor bot contract at `/api/bot/v1/`. Every endpoint requires
+`Authorization: Bearer <BOT_INTEGRATION_TOKEN>`; this token is separate from Telegram and
+admin authentication. Configure these backend variables:
+
+```env
+PUBLIC_SITE_URL=https://yourdomain.com
+BOT_INTEGRATION_TOKEN=replace-with-a-long-random-secret
+```
+
+The bot site entry is:
+
+```json
+{"id":"healthystock","name":"HealthyStock","api_base":"https://yourdomain.com/api/bot/v1/","token_env":"HEALTHYSTOCK_INTEGRATION_TOKEN"}
+```
+
+Routes are `GET options/`, `POST articles/`, `GET articles/:external_id/`,
+`PUT articles/:external_id/image/`, and `POST articles/:external_id/publish/`.
+Bot-created posts use the existing `generated_posts` model and remain hidden until the
+publish call. The `bot_articles` table is created automatically at backend startup and
+enforces one article per external UUID. Uploaded JPG, PNG, and WebP images are kept under
+`UPLOAD_DIR/bot`; production already binds `UPLOAD_DIR=/host/media`, while local Docker
+uses the persistent `healthystock_uploads_data` volume.
+
+Run the contract checks with `cd backend && npm test`.

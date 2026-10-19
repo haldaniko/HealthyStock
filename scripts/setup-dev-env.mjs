@@ -80,6 +80,7 @@ ensureEnv({
     CORS_ORIGIN: "http://localhost:3000,http://localhost:8080",
     DATABASE_URL: "postgres://healthystock:healthystock@localhost:5432/healthystock",
     REDIS_URL: "redis://localhost:6379",
+    PUBLIC_SITE_URL: "http://localhost:3000",
     POSTGRES_DB: "healthystock",
     POSTGRES_USER: "healthystock",
     POSTGRES_PASSWORD: "healthystock",
@@ -102,7 +103,8 @@ ensureEnv({
   },
   generated: {
     JWT_SECRET: secret,
-    REFRESH_TOKEN_SECRET: secret
+    REFRESH_TOKEN_SECRET: secret,
+    BOT_INTEGRATION_TOKEN: secret
   }
 });
 

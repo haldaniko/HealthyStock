@@ -43,6 +43,8 @@ services:
       REDIS_URL: redis://redis:6379
     ports:
       - "4000:4000"
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       env-setup:
         condition: service_completed_successfully
@@ -98,3 +100,5 @@ services:
 volumes:
   postgres_data:
     name: healthystock_postgres_data
+  uploads_data:
+    name: healthystock_uploads_data

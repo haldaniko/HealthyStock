@@ -21,6 +21,15 @@ export function openSqlite() {
   return sqlite;
 }
 
+export function isSqliteDatabase() {
+  return Boolean(sqlitePath);
+}
+
+export function closeDatabase() {
+  if (sqlite?.open) sqlite.close();
+  sqlite = undefined;
+}
+
 function sqliteSql(sql: string) {
   const positions: number[] = [];
   const text = sql
@@ -79,4 +88,14 @@ export async function initDb() {
       throw new Error(`SQLite application table is missing: ${table}`);
     }
   }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bot_articles (
+      external_id TEXT PRIMARY KEY,
+      post_id TEXT NOT NULL UNIQUE REFERENCES generated_posts(id) ON DELETE CASCADE,
+      payload_hash TEXT NOT NULL,
+      image_hash TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      published_at TEXT
+    )
+  `);
 }
