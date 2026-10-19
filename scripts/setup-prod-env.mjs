@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "..");
-const rootEnvPath = path.join(rootDir, ".env.production");
+const rootEnvPath = path.join(rootDir, ".env");
 const rootExamplePath = path.join(rootDir, ".env.production.example");
-const backendEnvPath = path.join(rootDir, "backend/.env.production");
-const backendExamplePath = path.join(rootDir, "backend/.env.production.example");
+const legacyRootEnvPath = path.join(rootDir, ".env.production");
+const legacyBackendEnvPath = path.join(rootDir, "backend/.env.production");
 
 const generated = {
   POSTGRES_PASSWORD: randomSecret(32),
@@ -22,22 +22,24 @@ const generated = {
 const rootEnv = await upsertEnvFile(rootExamplePath, rootEnvPath, {
   POSTGRES_PASSWORD: generated.POSTGRES_PASSWORD,
   LOCAL_SUPERADMIN_EMAIL: generated.LOCAL_SUPERADMIN_EMAIL,
-  LOCAL_SUPERADMIN_PASSWORD: generated.LOCAL_SUPERADMIN_PASSWORD
-});
-
-await upsertEnvFile(backendExamplePath, backendEnvPath, {
+  LOCAL_SUPERADMIN_PASSWORD: generated.LOCAL_SUPERADMIN_PASSWORD,
   JWT_SECRET: generated.JWT_SECRET,
   REFRESH_TOKEN_SECRET: generated.REFRESH_TOKEN_SECRET,
   BOT_INTEGRATION_TOKEN: generated.BOT_INTEGRATION_TOKEN
 }, {
   DATABASE_URL: "sqlite:/host/db.sqlite3"
-});
+}, [legacyRootEnvPath, legacyBackendEnvPath]);
+
+for (const legacyPath of [legacyRootEnvPath, legacyBackendEnvPath]) {
+  await fs.unlink(legacyPath).catch((error) => {
+    if (error?.code !== "ENOENT") throw error;
+  });
+}
 
 console.log("Production env setup complete.");
 console.log("");
 console.log("Created/updated:");
 console.log(`- ${relative(rootEnvPath)}`);
-console.log(`- ${relative(backendEnvPath)}`);
 console.log("");
 console.log("Generated values only when missing or still set to placeholders:");
 console.log("- POSTGRES_PASSWORD");
@@ -46,6 +48,7 @@ console.log("- JWT_SECRET");
 console.log("- REFRESH_TOKEN_SECRET");
 console.log("- BOT_INTEGRATION_TOKEN");
 console.log("- DATABASE_URL points to the host-bound production SQLite file");
+console.log("- legacy .env.production files are merged into .env and removed when present");
 console.log("");
 console.log("Review and replace placeholders before deploying:");
 console.log("- VITE_API_URL");
@@ -56,11 +59,19 @@ console.log("- OPENROUTER_SITE_URL");
 console.log("- OPENROUTER_* tuning values if needed");
 console.log("- SMTP_* if email delivery is needed");
 
-async function upsertEnvFile(examplePath, targetPath, generatedValues, forcedValues = {}) {
+async function upsertEnvFile(examplePath, targetPath, generatedValues, forcedValues = {}, legacyPaths = []) {
   const example = await fs.readFile(examplePath, "utf-8");
   const existing = await readOptional(targetPath);
-  const existingValues = parseEnv(existing);
-  const envValues = { ...parseEnv(example), ...existingValues };
+  const legacySources = await Promise.all(legacyPaths.map(readOptional));
+  const envValues = {
+    ...parseEnv(example),
+    ...parseEnv(existing),
+    ...Object.assign({}, ...legacySources.map(parseEnv))
+  };
+
+  for (const key of Object.keys(envValues)) {
+    if (process.env[key] !== undefined) envValues[key] = process.env[key];
+  }
 
   for (const [key, value] of Object.entries(generatedValues)) {
     if (shouldGenerate(envValues[key])) {

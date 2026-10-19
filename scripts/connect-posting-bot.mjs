@@ -17,8 +17,7 @@ if (parsedBase.protocol !== "https:" || !parsedBase.pathname.endsWith("/api/bot/
 }
 
 const siteFiles = [
-  [path.join(root, "backend/.env"), path.join(root, "backend/.env.example")],
-  [path.join(root, "backend/.env.production"), path.join(root, "backend/.env.production.example")]
+  [path.join(root, ".env"), path.join(root, ".env.production.example")]
 ];
 const botValues = parse(read(botEnv));
 const siteValues = siteFiles.map(([target, example]) => ({ target, example, values: parse(read(target) || read(example)) }));

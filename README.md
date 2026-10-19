@@ -91,7 +91,7 @@ This only logs admins out. It does not delete users.
 
 ## Production Secrets
 
-Set stable, strong secrets in `backend/.env.production` or your hosting secret manager:
+Set stable, strong secrets in the single root `.env` or your hosting secret manager:
 
 - `DATABASE_URL` (set by production Compose to `sqlite:/host/db.sqlite3`)
 - `JWT_SECRET`
@@ -111,7 +111,7 @@ For the one-time production import, keep the existing values of:
 
 ## Production Deployment (Docker)
 
-See [the production migration runbook](PRODUCTION-SQLITE-MIGRATION.md) for backup, rollout, verification, and recovery. With the existing `.env.production` and `backend/.env.production` retained, run from the same project directory:
+See [the production migration runbook](PRODUCTION-SQLITE-MIGRATION.md) for backup, rollout, verification, and recovery. Production Compose reads every service setting from the single root `.env`. On an existing installation, run `npm run setup:prod-env` once to merge legacy `.env.production` files, then run:
 
 ```sh
 docker compose -f docker-compose.prod.yml up --build -d

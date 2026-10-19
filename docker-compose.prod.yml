@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    env_file: ./.env.production
+    env_file: ./.env
     volumes:
       - healthystock_prod_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +25,7 @@ services:
     build:
       context: ./backend
       target: prod
-    env_file: ./.env.production
+    env_file: ./.env
     environment:
       POSTGRES_HOST: postgres
       HOST_DATA_DIR: /host
@@ -54,9 +54,7 @@ services:
       - type: bind
         source: .
         target: /host
-    env_file:
-      - path: ./backend/.env.production
-        required: false
+    env_file: ./.env
     environment:
       NODE_ENV: production
       DATABASE_URL: sqlite:/host/db.sqlite3
@@ -81,7 +79,7 @@ services:
       context: ./frontend
       target: prod
     restart: unless-stopped
-    env_file: ./.env.production
+    env_file: ./.env
     ports:
       - "8099:3000"
     depends_on:
@@ -90,9 +88,7 @@ services:
 
   admin-seed:
     image: healthystock-backend-prod
-    env_file:
-      - path: ./.env.production
-        required: true
+    env_file: ./.env
     environment:
       DATABASE_URL: sqlite:/host/db.sqlite3
     volumes:

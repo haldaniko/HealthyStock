@@ -6,7 +6,7 @@
 
    ```sh
    set -eu
-   test -f .env.production && test -f backend/.env.production
+   test -f .env && test -f .env.production
    backup_dir="$HOME/HealthyStock-backup-$(date +%F-%H%M%S)"
    mkdir -m 700 -p "$backup_dir"
    pg_container=$(docker compose --env-file .env.production -f docker-compose.prod.yml ps -q postgres)
@@ -19,15 +19,16 @@
    docker compose --env-file .env.production -f docker-compose.prod.yml stop postgres
    docker run --rm -v "$pg_volume:/source:ro" -v "$backup_dir:/backup" alpine:3.20 tar -C /source -czf /backup/postgres-volume.tar.gz .
    docker run --rm -v "$uploads_volume:/source:ro" -v "$backup_dir:/backup" alpine:3.20 tar -C /source -czf /backup/uploads-volume.tar.gz .
+   cp -a .env "$backup_dir/root.env"
    cp -a .env.production "$backup_dir/root.env.production"
-   cp -a backend/.env.production "$backup_dir/backend.env.production"
+   if [ -f backend/.env.production ]; then cp -a backend/.env.production "$backup_dir/backend.env.production"; fi
    if [ -f db.sqlite3 ]; then cp -a db.sqlite3 "$backup_dir/"; fi
    if [ -d media ]; then cp -a media "$backup_dir/"; fi
    ```
 
    The commands inspect the current containers to find the exact old volume names. Do not use `docker compose down -v`. Stopping the old backend before the backup closes the write window. Keep backup files outside the Git checkout and protect the env files.
 
-2. Update the code **in the same directory**. Preserve the existing `.env.production`, `backend/.env.production`, and Compose project name (`COMPOSE_PROJECT_NAME` if used). The existing `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` values must match the old volume. If the previous deployment used a different Compose project name, run with that same `COMPOSE_PROJECT_NAME` environment variable; a new project name would create new empty volumes. The new production file reads `.env.production` directly, so `--env-file` is no longer needed.
+2. Update the code **in the same directory**. Preserve `.env`, `.env.production`, `backend/.env.production` when present, and the Compose project name (`COMPOSE_PROJECT_NAME` if used). Run `npm run setup:prod-env` once: it merges the legacy production files into the single root `.env` and removes the two obsolete files only after writing `.env`. The existing `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` values must match the old volume. A different Compose project name would create new empty volumes.
 
 3. Run:
 
